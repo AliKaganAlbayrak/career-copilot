@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Veritabanı (yerel)
+*.db
+*.sqlite3
+
+# Ortam değişkenleri — gizli anahtarlar asla repoya girmez
+.env
+.env.*
+!.env.example
+
+# Node / frontend
+node_modules/
+dist/
+.vite/
+
+# Editör ve işletim sistemi
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
