@@ -26,3 +26,23 @@ jobs:
       - name: pytest
         working-directory: backend
         run: python -m pytest -q
+
+  frontend-build:
+    name: Frontend derlemesi
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node kurulumu
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Bağımlılıklar
+        working-directory: frontend
+        run: npm install
+
+      - name: Tip kontrolü ve derleme
+        working-directory: frontend
+        run: npm run build
