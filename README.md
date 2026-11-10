@@ -30,6 +30,16 @@ python -m uvicorn app.main:app --reload
 
 Arayüz: <http://localhost:8000/docs> (FastAPI otomatik Swagger dokümanı)
 
+### Frontend
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Arayüz: <http://localhost:5173> (backend'in 8000 portunda çalışıyor olması gerekir)
+
 ### Testler
 
 ```powershell
@@ -54,7 +64,7 @@ Durum değerleri: `basvuruldu`, `mulakat`, `teklif`, `red`, `kabul`
 ## Yol haritası
 
 - [x] Backend çekirdeği — CRUD, filtreleme, istatistik, testler
-- [ ] Frontend — React + TypeScript, başvuru tablosu ve ekleme formu
+- [x] Frontend — React + TypeScript, başvuru tablosu ve ekleme formu
 - [ ] Kimlik doğrulama — kayıt/giriş, JWT
 - [ ] Yapay zekâ — ilan ve CV analizi, ön yazı üretimi
 - [ ] Grafikler — süreç hunisi ve zaman serisi
