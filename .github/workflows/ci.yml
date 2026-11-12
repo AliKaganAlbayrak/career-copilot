@@ -1,9 +1,10 @@
 name: CI
 
+# Her dalda çalışır: hata, PR açılmadan önce görülür.
 on:
   push:
-    branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
   backend-tests:
