@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from enum import Enum
 
-from sqlalchemy import DateTime, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -50,6 +50,8 @@ class Application(Base):
     __tablename__ = "applications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Her başvuru bir kullanıcıya aittir; sorgular bu alana göre süzülür.
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     company: Mapped[str] = mapped_column(String(200), index=True)
     position: Mapped[str] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(
