@@ -61,3 +61,27 @@ class Stats(BaseModel):
 
     total: int
     by_status: dict[str, int]
+
+
+class UserCreate(BaseModel):
+    """POST /auth/register gövdesi."""
+
+    email: str = Field(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+
+
+class User(BaseModel):
+    """API'nin döndürdüğü kullanıcı. Parola özeti bilerek burada yok."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    created_at: datetime
+
+
+class Token(BaseModel):
+    """Başarılı girişte dönen erişim belirteci."""
+
+    access_token: str
+    token_type: str = "bearer"

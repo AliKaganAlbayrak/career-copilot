@@ -30,6 +30,20 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class User(Base):
+    """Kayıtlı kullanıcı. Parolanın kendisi değil, yalnızca özeti saklanır."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
+    hashed_password: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    def __repr__(self) -> str:
+        return f"<User {self.id} {self.email}>"
+
+
 class Application(Base):
     """Tek bir iş başvurusu kaydı."""
 
