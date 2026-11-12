@@ -34,3 +34,10 @@ export interface ApplicationCreate {
   link?: string;
   notes?: string;
 }
+
+// GET /auth/me ve POST /auth/register çıktısı.
+export interface User {
+  id: number;
+  email: string;
+  created_at: string;
+}
