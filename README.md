@@ -52,6 +52,9 @@ python -m pytest -q
 | Yöntem | Yol | Açıklama |
 | --- | --- | --- |
 | `GET` | `/health` | Servis durumu |
+| `POST` | `/auth/register` | Kullanıcı kaydı (201, e-posta kayıtlıysa 409) |
+| `POST` | `/auth/login` | Giriş; JWT erişim belirteci döner |
+| `GET` | `/auth/me` | Oturum sahibinin bilgileri |
 | `POST` | `/applications` | Yeni başvuru oluşturur (201) |
 | `GET` | `/applications?status=&limit=&offset=` | Listeler, en yeniden eskiye |
 | `GET` | `/applications/{id}` | Tek kayıt (yoksa 404) |
@@ -59,13 +62,16 @@ python -m pytest -q
 | `DELETE` | `/applications/{id}` | Siler (204) |
 | `GET` | `/stats` | Toplam sayı ve durum kırılımı |
 
+`/applications` ve `/stats` uç noktaları `Authorization: Bearer <belirteç>` başlığı ister;
+her kullanıcı yalnızca kendi başvurularını görür. Parolalar scrypt ile tuzlanıp özetlenir.
+
 Durum değerleri: `basvuruldu`, `mulakat`, `teklif`, `red`, `kabul`
 
 ## Yol haritası
 
 - [x] Backend çekirdeği — CRUD, filtreleme, istatistik, testler
 - [x] Frontend — React + TypeScript, başvuru tablosu ve ekleme formu
-- [ ] Kimlik doğrulama — kayıt/giriş, JWT
+- [x] Kimlik doğrulama — kayıt/giriş, JWT, kullanıcıya özel veri
 - [ ] Yapay zekâ — ilan ve CV analizi, ön yazı üretimi
 - [ ] Grafikler — süreç hunisi ve zaman serisi
 - [ ] Docker, canlıya alma, paylaşılabilir demo
