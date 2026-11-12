@@ -36,3 +36,17 @@ def client(tmp_path) -> Generator[TestClient, None, None]:
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+def kayit_ve_giris(client: TestClient, email: str, password: str = "gizli-parola-1") -> dict[str, str]:
+    """Kullanıcı oluşturur, giriş yapar ve Authorization başlığını döndürür."""
+    client.post("/auth/register", json={"email": email, "password": password})
+    response = client.post("/auth/login", data={"username": email, "password": password})
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest.fixture()
+def auth_client(client: TestClient) -> TestClient:
+    """Oturum açmış istemci: her isteğe belirteci kendiliğinden ekler."""
+    client.headers.update(kayit_ve_giris(client, "ali@example.com"))
+    return client

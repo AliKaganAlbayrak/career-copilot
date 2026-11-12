@@ -41,10 +41,14 @@ app.add_middleware(
 app.include_router(auth_router)
 
 
-def get_application_or_404(application_id: int, db: Session) -> models.Application:
-    """Kaydı getirir, yoksa 404 fırlatır. Üç uç nokta bunu paylaşıyor."""
+def get_application_or_404(application_id: int, db: Session, owner: models.User) -> models.Application:
+    """Kaydı getirir; yoksa ya da başkasına aitse 404 fırlatır.
+
+    Başkasının kaydı için 403 yerine 404 dönüyoruz: böylece o numarada
+    bir kayıt olup olmadığı bilgisi bile sızmaz.
+    """
     application = db.get(models.Application, application_id)
-    if application is None:
+    if application is None or application.owner_id != owner.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"{application_id} numaralı başvuru bulunamadı.",
@@ -67,11 +71,12 @@ def health() -> dict[str, str]:
 def create_application(
     payload: schemas.ApplicationCreate,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ) -> models.Application:
-    """Yeni başvuru oluşturur."""
+    """Oturum açmış kullanıcı adına yeni başvuru oluşturur."""
     data = payload.model_dump(exclude_none=True)
     data["status"] = payload.status.value
-    application = models.Application(**data)
+    application = models.Application(**data, owner_id=current_user.id)
 
     db.add(application)
     db.commit()
@@ -89,9 +94,10 @@ def list_applications(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ) -> list[models.Application]:
-    """Başvuruları en yeniden eskiye listeler; isteğe bağlı durum filtresi alır."""
-    stmt = select(models.Application)
+    """Kullanıcının kendi başvurularını en yeniden eskiye listeler."""
+    stmt = select(models.Application).where(models.Application.owner_id == current_user.id)
     if status_filter is not None:
         stmt = stmt.where(models.Application.status == status_filter.value)
 
@@ -107,9 +113,10 @@ def list_applications(
 def get_application(
     application_id: int,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ) -> models.Application:
     """Tek bir başvuruyu getirir."""
-    return get_application_or_404(application_id, db)
+    return get_application_or_404(application_id, db, current_user)
 
 
 @app.put(
@@ -121,9 +128,10 @@ def update_application(
     application_id: int,
     payload: schemas.ApplicationUpdate,
     db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
 ) -> models.Application:
     """Kısmi güncelleme: yalnızca gövdede gönderilen alanlar değişir."""
-    application = get_application_or_404(application_id, db)
+    application = get_application_or_404(application_id, db, current_user)
 
     # exclude_unset: istemcinin hiç göndermediği alanları atla.
     changes = payload.model_dump(exclude_unset=True)
@@ -143,21 +151,27 @@ def update_application(
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["başvurular"],
 )
-def delete_application(application_id: int, db: Session = Depends(get_db)) -> Response:
+def delete_application(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> Response:
     """Başvuruyu siler."""
-    application = get_application_or_404(application_id, db)
+    application = get_application_or_404(application_id, db, current_user)
     db.delete(application)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @app.get("/stats", response_model=schemas.Stats, tags=["istatistik"])
-def stats(db: Session = Depends(get_db)) -> schemas.Stats:
-    """Toplam başvuru sayısı ve durum kırılımı."""
-    total = db.scalar(select(func.count()).select_from(models.Application)) or 0
-
+def stats(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> schemas.Stats:
+    """Kullanıcının toplam başvuru sayısı ve durum kırılımı."""
     rows = db.execute(
         select(models.Application.status, func.count())
+        .where(models.Application.owner_id == current_user.id)
         .group_by(models.Application.status)
     ).all()
 
@@ -166,4 +180,4 @@ def stats(db: Session = Depends(get_db)) -> schemas.Stats:
     for status_value, count in rows:
         by_status[status_value] = count
 
-    return schemas.Stats(total=total, by_status=by_status)
+    return schemas.Stats(total=sum(by_status.values()), by_status=by_status)
