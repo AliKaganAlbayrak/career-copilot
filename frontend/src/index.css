@@ -101,3 +101,39 @@ th {
   background: #fee2e2;
   color: #b91c1c;
 }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #52606d;
+  font-size: 0.9rem;
+}
+
+.auth {
+  display: grid;
+  gap: 10px;
+  max-width: 360px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e4e7eb;
+  border-radius: 8px;
+}
+
+.auth h2 {
+  margin: 0 0 4px;
+}
+
+button.link {
+  padding: 4px 0;
+  background: none;
+  border: none;
+  color: #1d4ed8;
+}
