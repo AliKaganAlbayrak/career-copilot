@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import * as api from "./api";
+import AiPanel from "./components/AiPanel";
 import ApplicationForm from "./components/ApplicationForm";
 import ApplicationTable from "./components/ApplicationTable";
 import AuthForm from "./components/AuthForm";
@@ -49,6 +50,10 @@ export default function App() {
       .catch((err: unknown) => handleError(err, "Kullanıcı bilgisi alınamadı."));
     void refresh();
   }, [authenticated, refresh, handleError]);
+
+  // AiPanel'e verilen işlev sabit kalsın diye useCallback: aksi hâlde
+  // her çizimde yeni işlev oluşur ve paneldeki useEffect yeniden çalışır.
+  const handleUnauthorized = useCallback(() => setAuthenticated(false), []);
 
   function handleLogout() {
     api.logout();
@@ -124,6 +129,8 @@ export default function App() {
           onDelete={handleDelete}
         />
       )}
+
+      <AiPanel onUnauthorized={handleUnauthorized} />
     </main>
   );
 }
