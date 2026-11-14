@@ -7,6 +7,7 @@ ORM modelleri veritabanının şeklini, bu şemalar API'nin şeklini tanımlar.
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -97,3 +98,35 @@ class CvOut(BaseModel):
     """Kayıtlı özgeçmiş; henüz kaydedilmediyse null."""
 
     cv_text: str | None
+
+
+class AnalyzeRequest(BaseModel):
+    """POST /ai/analyze gövdesi. cv_text verilmezse kayıtlı özgeçmiş kullanılır."""
+
+    job_description: str = Field(min_length=30, max_length=20_000)
+    cv_text: str | None = Field(default=None, max_length=30_000)
+
+
+class AnalysisResult(BaseModel):
+    """İlan ile özgeçmişin eşleşme analizi."""
+
+    match_score: int = Field(ge=0, le=100)
+    strengths: list[str]
+    gaps: list[str]
+    summary: str
+
+
+class CoverLetterRequest(BaseModel):
+    """POST /ai/cover-letter gövdesi."""
+
+    job_description: str = Field(min_length=30, max_length=20_000)
+    company: str = Field(min_length=1, max_length=200)
+    position: str = Field(min_length=1, max_length=200)
+    cv_text: str | None = Field(default=None, max_length=30_000)
+    language: Literal["tr", "en"] = "tr"
+
+
+class CoverLetter(BaseModel):
+    """Üretilen ön yazı."""
+
+    cover_letter: str
