@@ -41,3 +41,19 @@ export interface User {
   email: string;
   created_at: string;
 }
+
+// POST /ai/analyze çıktısı.
+export interface AnalysisResult {
+  match_score: number; // 0-100
+  strengths: string[];
+  gaps: string[];
+  summary: string;
+}
+
+// POST /ai/cover-letter gövdesi.
+export interface CoverLetterRequest {
+  job_description: string;
+  company: string;
+  position: string;
+  language: "tr" | "en";
+}

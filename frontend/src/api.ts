@@ -1,4 +1,11 @@
-import type { Application, ApplicationCreate, ApplicationStatus, User } from "./types";
+import type {
+  AnalysisResult,
+  Application,
+  ApplicationCreate,
+  ApplicationStatus,
+  CoverLetterRequest,
+  User,
+} from "./types";
 
 const BASE_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const TOKEN_KEY = "career-copilot-token";
@@ -138,4 +145,33 @@ export function updateStatus(id: number, status: ApplicationStatus): Promise<App
 
 export function deleteApplication(id: number): Promise<void> {
   return request<void>(`/applications/${id}`, { method: "DELETE" });
+}
+
+// --- Yapay zekâ ---
+
+export async function getCv(): Promise<string> {
+  const data = await request<{ cv_text: string | null }>("/ai/cv");
+  return data.cv_text ?? "";
+}
+
+export function saveCv(cvText: string): Promise<{ cv_text: string | null }> {
+  return request<{ cv_text: string | null }>("/ai/cv", {
+    method: "PUT",
+    body: JSON.stringify({ cv_text: cvText }),
+  });
+}
+
+export function analyze(jobDescription: string): Promise<AnalysisResult> {
+  return request<AnalysisResult>("/ai/analyze", {
+    method: "POST",
+    body: JSON.stringify({ job_description: jobDescription }),
+  });
+}
+
+export async function coverLetter(payload: CoverLetterRequest): Promise<string> {
+  const data = await request<{ cover_letter: string }>("/ai/cover-letter", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return data.cover_letter;
 }
