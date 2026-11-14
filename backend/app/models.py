@@ -38,6 +38,8 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(200))
+    # Yapay zekâ analizlerinde kullanılan özgeçmiş metni (isteğe bağlı).
+    cv_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     def __repr__(self) -> str:
