@@ -75,3 +75,30 @@ def analyze(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Model yanıtı okunamadı: {exc}",
         ) from exc
+
+
+@router.post("/cover-letter", response_model=schemas.CoverLetter)
+def cover_letter(
+    payload: schemas.CoverLetterRequest,
+    current_user: models.User = Depends(get_current_user),
+    llm: LLMClient = Depends(get_llm_client),
+) -> schemas.CoverLetter:
+    """İlana ve özgeçmişe göre kişiye özel ön yazı üretir."""
+    cv = resolve_cv(payload.cv_text, current_user)
+    text = ask_model(
+        llm,
+        prompts.build_cover_letter_prompt(
+            payload.job_description,
+            cv,
+            payload.company,
+            payload.position,
+            payload.language,
+        ),
+        system=prompts.COVER_LETTER_SYSTEM,
+    ).strip()
+    if not text:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Model boş yanıt döndürdü.",
+        )
+    return schemas.CoverLetter(cover_letter=text)
