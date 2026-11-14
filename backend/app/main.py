@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from . import models, schemas
+from .ai import router as ai_router
 from .auth import get_current_user, router as auth_router
 from .database import Base, engine, get_db
 
@@ -39,6 +40,7 @@ app.add_middleware(
 
 
 app.include_router(auth_router)
+app.include_router(ai_router)
 
 
 def get_application_or_404(application_id: int, db: Session, owner: models.User) -> models.Application:

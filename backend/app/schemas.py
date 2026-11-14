@@ -85,3 +85,15 @@ class Token(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+
+
+class CvIn(BaseModel):
+    """PUT /ai/cv gövdesi: özgeçmişin düz metin hâli."""
+
+    cv_text: str = Field(min_length=1, max_length=30_000)
+
+
+class CvOut(BaseModel):
+    """Kayıtlı özgeçmiş; henüz kaydedilmediyse null."""
+
+    cv_text: str | None
