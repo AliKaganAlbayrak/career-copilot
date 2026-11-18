@@ -25,6 +25,7 @@ cd backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements-dev.txt
+alembic upgrade head
 python -m uvicorn app.main:app --reload
 ```
 
@@ -69,6 +70,21 @@ python -m pytest -q
 her kullanıcı yalnızca kendi başvurularını görür. Parolalar scrypt ile tuzlanıp özetlenir.
 
 Durum değerleri: `basvuruldu`, `mulakat`, `teklif`, `red`, `kabul`
+
+## Veritabanı göçleri
+
+Şema [Alembic](https://alembic.sqlalchemy.org) ile yönetilir; tablolar uygulama açılırken
+değil, göçlerle oluşturulur. Böylece model değiştiğinde mevcut veri silinmeden şema güncellenir.
+
+```powershell
+cd backend
+alembic upgrade head                         # bekleyen göçleri uygula
+alembic revision --autogenerate -m "baslik"  # model değişikliğinden yeni göç üret
+alembic downgrade -1                         # son göçü geri al
+```
+
+`tests/test_migrations.py`, göçlerin modellerle birebir aynı şemayı ürettiğini ve geri
+alınabildiğini doğrular; göç yazmayı unutmak CI'da yakalanır.
 
 ## Yapay zekâ
 
