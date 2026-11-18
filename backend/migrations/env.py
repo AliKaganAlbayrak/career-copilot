@@ -30,18 +30,31 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+def _run(connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        # SQLite ALTER TABLE'ı çok sınırlı destekler. Batch modu tabloyu
+        # yeniden oluşturarak sütun silme/değiştirme işlerini mümkün kılar.
+        render_as_batch=True,
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
 def run_migrations_online() -> None:
-    """Göçleri doğrudan veritabanına uygular."""
-    with engine.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            # SQLite ALTER TABLE'ı çok sınırlı destekler. Batch modu tabloyu
-            # yeniden oluşturarak sütun silme/değiştirme işlerini mümkün kılar.
-            render_as_batch=True,
-        )
-        with context.begin_transaction():
-            context.run_migrations()
+    """Göçleri doğrudan veritabanına uygular.
+
+    Testler kendi geçici veritabanının bağlantısını config.attributes
+    üzerinden verir; yoksa uygulamanın varsayılan veritabanı kullanılır.
+    """
+    connection = config.attributes.get("connection")
+    if connection is not None:
+        _run(connection)
+        return
+
+    with engine.connect() as conn:
+        _run(conn)
 
 
 if context.is_offline_mode():
