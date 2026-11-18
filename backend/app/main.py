@@ -12,11 +12,7 @@ from sqlalchemy.orm import Session
 from . import models, schemas
 from .ai import router as ai_router
 from .auth import get_current_user, router as auth_router
-from .database import Base, engine, get_db
-
-# Geliştirme kolaylığı için tabloları açılışta oluşturuyoruz.
-# Üretimde bunun yerine Alembic ile göç (migration) kullanılacak.
-Base.metadata.create_all(bind=engine)
+from .database import get_db
 
 app = FastAPI(
     title="Career Copilot API",
