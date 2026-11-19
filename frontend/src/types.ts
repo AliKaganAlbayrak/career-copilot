@@ -57,3 +57,23 @@ export interface CoverLetterRequest {
   position: string;
   language: "tr" | "en";
 }
+
+// GET /stats çıktısı.
+export interface FunnelStep {
+  key: string;
+  label: string;
+  count: number;
+  rate: number; // yüzde
+}
+
+export interface Stats {
+  total: number;
+  by_status: Record<ApplicationStatus, number>;
+  funnel: FunnelStep[];
+}
+
+// GET /stats/timeline çıktısı: haftalık başvuru sayısı.
+export interface WeekCount {
+  week_start: string; // YYYY-MM-DD, pazartesi
+  count: number;
+}
