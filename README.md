@@ -61,7 +61,8 @@ python -m pytest -q
 | `GET` | `/applications/{id}` | Tek kayıt (yoksa 404) |
 | `PUT` | `/applications/{id}` | Kısmi günceller |
 | `DELETE` | `/applications/{id}` | Siler (204) |
-| `GET` | `/stats` | Toplam sayı ve durum kırılımı |
+| `GET` | `/stats` | Toplam sayı, durum kırılımı ve süreç hunisi |
+| `GET` | `/stats/timeline?weeks=12` | Son N haftanın haftalık başvuru sayıları |
 | `GET` / `PUT` | `/ai/cv` | Özgeçmiş metnini okur / kaydeder |
 | `POST` | `/ai/analyze` | İlan + özgeçmiş eşleşme analizi (puan, güçlü yönler, eksikler) |
 | `POST` | `/ai/cover-letter` | Kişiye özel ön yazı üretir |
@@ -105,7 +106,8 @@ Testler gerçek model yerine sahte bir istemci kullanır.
 - [x] Frontend — React + TypeScript, başvuru tablosu ve ekleme formu
 - [x] Kimlik doğrulama — kayıt/giriş, JWT, kullanıcıya özel veri
 - [x] Yapay zekâ — ilan ve CV analizi, ön yazı üretimi (yerel LLM)
-- [ ] Grafikler — süreç hunisi ve zaman serisi
+- [x] Grafikler — süreç hunisi ve haftalık başvuru grafiği (kütüphanesiz SVG)
+- [ ] Durum geçmişi — huninin mülakat sonrası redleri de doğru sayması için
 - [ ] Docker, canlıya alma, paylaşılabilir demo
 
 ## Katkı düzeni
