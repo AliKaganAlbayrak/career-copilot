@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from . import models, schemas
+from . import models, schemas, stats as stats_calc
 from .ai import router as ai_router
 from .auth import get_current_user, router as auth_router
 from .database import get_db
@@ -178,4 +179,26 @@ def stats(
     for status_value, count in rows:
         by_status[status_value] = count
 
-    return schemas.Stats(total=sum(by_status.values()), by_status=by_status)
+    return schemas.Stats(
+        total=sum(by_status.values()),
+        by_status=by_status,
+        funnel=stats_calc.funnel(by_status),
+    )
+
+
+@app.get("/stats/timeline", response_model=list[schemas.WeekCount], tags=["istatistik"])
+def stats_timeline(
+    weeks: int = Query(default=12, ge=1, le=52),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> list[schemas.WeekCount]:
+    """Son N haftanın haftalık başvuru sayıları (eskiden yeniye)."""
+    # Kişisel bir başvuru listesi küçüktür; tarihleri çekip Python'da gruplamak
+    # SQLite ile PostgreSQL arasında tarih fonksiyonu farkıyla uğraşmaktan iyidir.
+    moments = db.scalars(
+        select(models.Application.applied_at).where(
+            models.Application.owner_id == current_user.id
+        )
+    )
+    today = datetime.now(timezone.utc).date()
+    return stats_calc.weekly_counts(moments, weeks, today)
