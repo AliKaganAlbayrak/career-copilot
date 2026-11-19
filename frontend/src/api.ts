@@ -4,7 +4,9 @@ import type {
   ApplicationCreate,
   ApplicationStatus,
   CoverLetterRequest,
+  Stats,
   User,
+  WeekCount,
 } from "./types";
 
 const BASE_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -174,4 +176,14 @@ export async function coverLetter(payload: CoverLetterRequest): Promise<string> 
     body: JSON.stringify(payload),
   });
   return data.cover_letter;
+}
+
+// --- İstatistik ---
+
+export function getStats(): Promise<Stats> {
+  return request<Stats>("/stats");
+}
+
+export function getTimeline(weeks = 12): Promise<WeekCount[]> {
+  return request<WeekCount[]>(`/stats/timeline?weeks=${weeks}`);
 }
