@@ -4,6 +4,7 @@ import AiPanel from "./components/AiPanel";
 import ApplicationForm from "./components/ApplicationForm";
 import ApplicationTable from "./components/ApplicationTable";
 import AuthForm from "./components/AuthForm";
+import StatsPanel from "./components/StatsPanel";
 import type { Application, ApplicationCreate, ApplicationStatus } from "./types";
 
 export default function App() {
@@ -115,6 +116,8 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <StatsPanel refreshKey={applications} onUnauthorized={handleUnauthorized} />
 
       <ApplicationForm onSubmit={handleCreate} />
 
