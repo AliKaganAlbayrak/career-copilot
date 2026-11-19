@@ -6,7 +6,7 @@ ORM modelleri veritabanının şeklini, bu şemalar API'nin şeklini tanımlar.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -57,11 +57,28 @@ class Application(ApplicationBase):
     applied_at: datetime
 
 
+class FunnelStep(BaseModel):
+    """Huninin bir aşaması: o noktaya ulaşan başvuru sayısı ve toplama oranı."""
+
+    key: str
+    label: str
+    count: int
+    rate: float  # yüzde, 0-100
+
+
 class Stats(BaseModel):
     """GET /stats çıktısı."""
 
     total: int
     by_status: dict[str, int]
+    funnel: list[FunnelStep]
+
+
+class WeekCount(BaseModel):
+    """Bir haftada yapılan başvuru sayısı (hafta pazartesi başlar)."""
+
+    week_start: date
+    count: int
 
 
 class UserCreate(BaseModel):
