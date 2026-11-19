@@ -324,3 +324,85 @@ textarea {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+.inbox {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 32px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e4e7eb;
+  border-radius: 8px;
+}
+
+.inbox-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.inbox-head h2 {
+  margin: 0;
+}
+
+.inbox-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #7b8794;
+}
+
+.mail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.mail {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid #e4e7eb;
+  border-radius: 6px;
+}
+
+.mail-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mail-date {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: #7b8794;
+}
+
+.mail-summary,
+.mail-subject,
+.mail-done {
+  margin: 0;
+}
+
+.mail-subject {
+  font-size: 0.85rem;
+  color: #7b8794;
+}
+
+.mail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+}
+
+.mail-done {
+  font-size: 0.85rem;
+  color: #15803d;
+}

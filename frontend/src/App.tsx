@@ -4,6 +4,7 @@ import AiPanel from "./components/AiPanel";
 import ApplicationForm from "./components/ApplicationForm";
 import ApplicationTable from "./components/ApplicationTable";
 import AuthForm from "./components/AuthForm";
+import InboxPanel from "./components/InboxPanel";
 import StatsPanel from "./components/StatsPanel";
 import type { Application, ApplicationCreate, ApplicationStatus } from "./types";
 
@@ -118,6 +119,11 @@ export default function App() {
       </header>
 
       <StatsPanel refreshKey={applications} onUnauthorized={handleUnauthorized} />
+
+      <InboxPanel
+        onUnauthorized={handleUnauthorized}
+        onApplicationsChanged={() => void refresh()}
+      />
 
       <ApplicationForm onSubmit={handleCreate} />
 
