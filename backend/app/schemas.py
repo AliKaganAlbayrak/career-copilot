@@ -147,3 +147,28 @@ class CoverLetter(BaseModel):
     """Üretilen ön yazı."""
 
     cover_letter: str
+
+
+class Email(BaseModel):
+    """GET /inbox kaydı: işle ilgili bir e-posta ve durum önerisi."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    sender: str
+    subject: str
+    received_at: datetime
+    category: str
+    summary: str
+    company: str | None
+    application_id: int | None
+    suggested_status: str | None
+    suggestion_state: str
+
+
+class SyncResult(BaseModel):
+    """POST /inbox/sync çıktısı."""
+
+    scanned: int  # sağlayıcıdan gelen
+    job_related: int  # ön elemeyi ve modeli geçen
+    new: int  # bu taramada ilk kez kaydedilen
