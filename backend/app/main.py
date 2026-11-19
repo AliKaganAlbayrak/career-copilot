@@ -7,12 +7,13 @@ from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from . import models, schemas, stats as stats_calc
 from .ai import router as ai_router
 from .auth import get_current_user, router as auth_router
+from .inbox import router as inbox_router
 from .database import get_db
 
 app = FastAPI(
@@ -38,6 +39,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(ai_router)
+app.include_router(inbox_router)
 
 
 def get_application_or_404(application_id: int, db: Session, owner: models.User) -> models.Application:
@@ -157,6 +159,14 @@ def delete_application(
 ) -> Response:
     """Başvuruyu siler."""
     application = get_application_or_404(application_id, db, current_user)
+    # Bağlı e-postalar kalır, yalnızca bağlantı kopar. Veritabanındaki
+    # ON DELETE SET NULL da bunu yapar, ama SQLite foreign key'leri varsayılan
+    # olarak uygulamadığı için burada açıkça yapıyoruz.
+    db.execute(
+        update(models.EmailMessage)
+        .where(models.EmailMessage.application_id == application.id)
+        .values(application_id=None)
+    )
     db.delete(application)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
