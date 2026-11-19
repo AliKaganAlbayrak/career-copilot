@@ -63,6 +63,9 @@ python -m pytest -q
 | `DELETE` | `/applications/{id}` | Siler (204) |
 | `GET` | `/stats` | Toplam sayı, durum kırılımı ve süreç hunisi |
 | `GET` | `/stats/timeline?weeks=12` | Son N haftanın haftalık başvuru sayıları |
+| `POST` | `/inbox/sync?days=14` | Postaları tarar, işle ilgili olanları sınıflandırıp kaydeder |
+| `GET` | `/inbox` | İş e-postaları ve durum önerileri |
+| `POST` | `/inbox/{id}/accept` · `/dismiss` | Öneriyi uygular / yok sayar |
 | `GET` / `PUT` | `/ai/cv` | Özgeçmiş metnini okur / kaydeder |
 | `POST` | `/ai/analyze` | İlan + özgeçmiş eşleşme analizi (puan, güçlü yönler, eksikler) |
 | `POST` | `/ai/cover-letter` | Kişiye özel ön yazı üretir |
@@ -100,6 +103,23 @@ Model `OLLAMA_MODEL`, adres `OLLAMA_URL` ortam değişkeniyle değiştirilebilir
 `LLMClient` arayüzünü tanır; başka bir sağlayıcı eklemek tek bir sınıf yazmaktır.
 Testler gerçek model yerine sahte bir istemci kullanır.
 
+## Posta kutusu
+
+Uygulama posta kutusunu tarar, işle ilgili e-postaları bulur ve "Aselsan sana e-posta attı:
+25 Kasım'da teknik mülakata davet ediliyorsun" gibi özetler. E-posta bir başvuruyla
+eşleşirse durum önerisi çıkar (ör. Başvuruldu → Mülakat); **durum kendiliğinden değişmez**,
+kullanıcı onaylar.
+
+1. **Ön eleme (kural tabanlı):** takip edilen bir şirketten gelmeyen ve iş sözcüğü içermeyen
+   e-postalar modele hiç gönderilmez.
+2. **Sınıflandırma (yerel LLM):** mülakat daveti / olumsuz / teklif / bilgilendirme ve tek
+   cümlelik özet.
+3. **Eşleştirme:** şirket adı ve gönderen alan adıyla (`ik@aselsan.com.tr` → Aselsan).
+
+Gizlilik: e-postanın gövdesi saklanmaz, yalnızca gönderen, konu, tarih ve özet tutulur;
+işle ilgisiz e-postalar hiç kaydedilmez. Sağlayıcı `MailProvider` arayüzünün arkasında;
+şu an `MAIL_PROVIDER=demo` örnek e-postalarla çalışır, Gmail sağlayıcısı (OAuth) sıradaki adım.
+
 ## Yol haritası
 
 - [x] Backend çekirdeği — CRUD, filtreleme, istatistik, testler
@@ -107,6 +127,8 @@ Testler gerçek model yerine sahte bir istemci kullanır.
 - [x] Kimlik doğrulama — kayıt/giriş, JWT, kullanıcıya özel veri
 - [x] Yapay zekâ — ilan ve CV analizi, ön yazı üretimi (yerel LLM)
 - [x] Grafikler — süreç hunisi ve haftalık başvuru grafiği (kütüphanesiz SVG)
+- [x] Posta kutusu — iş e-postalarını sınıflandırma ve durum önerisi (demo sağlayıcı)
+- [ ] Gmail bağlantısı — OAuth ile gerçek posta kutusu
 - [ ] Durum geçmişi — huninin mülakat sonrası redleri de doğru sayması için
 - [ ] Docker, canlıya alma, paylaşılabilir demo
 
