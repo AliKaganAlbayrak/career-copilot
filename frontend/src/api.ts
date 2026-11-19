@@ -4,7 +4,9 @@ import type {
   ApplicationCreate,
   ApplicationStatus,
   CoverLetterRequest,
+  Email,
   Stats,
+  SyncResult,
   User,
   WeekCount,
 } from "./types";
@@ -186,4 +188,22 @@ export function getStats(): Promise<Stats> {
 
 export function getTimeline(weeks = 12): Promise<WeekCount[]> {
   return request<WeekCount[]>(`/stats/timeline?weeks=${weeks}`);
+}
+
+// --- Posta kutusu ---
+
+export function syncInbox(days = 14): Promise<SyncResult> {
+  return request<SyncResult>(`/inbox/sync?days=${days}`, { method: "POST" });
+}
+
+export function listInbox(): Promise<Email[]> {
+  return request<Email[]>("/inbox");
+}
+
+export function acceptSuggestion(id: number): Promise<Email> {
+  return request<Email>(`/inbox/${id}/accept`, { method: "POST" });
+}
+
+export function dismissSuggestion(id: number): Promise<Email> {
+  return request<Email>(`/inbox/${id}/dismiss`, { method: "POST" });
 }

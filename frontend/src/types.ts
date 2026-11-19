@@ -77,3 +77,26 @@ export interface WeekCount {
   week_start: string; // YYYY-MM-DD, pazartesi
   count: number;
 }
+
+// GET /inbox kaydı.
+export type MailCategory = "mulakat_daveti" | "red" | "teklif" | "bilgi";
+export type SuggestionState = "yok" | "bekliyor" | "kabul" | "yoksayildi";
+
+export interface Email {
+  id: number;
+  sender: string;
+  subject: string;
+  received_at: string;
+  category: MailCategory;
+  summary: string;
+  company: string | null;
+  application_id: number | null;
+  suggested_status: ApplicationStatus | null;
+  suggestion_state: SuggestionState;
+}
+
+export interface SyncResult {
+  scanned: number;
+  job_related: number;
+  new: number;
+}
