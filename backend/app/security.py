@@ -6,6 +6,7 @@ her kullanıcıya özel rastgele bir "tuz" (salt) eklenerek özetlenir.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import hmac
 import os
@@ -13,6 +14,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from cryptography.fernet import Fernet, InvalidToken
 
 # Geliştirme için varsayılan anahtar; üretimde SECRET_KEY ortam değişkeni şart.
 SECRET_KEY = os.getenv("SECRET_KEY", "gelistirme-anahtari-uretimde-mutlaka-degistir")
@@ -54,6 +56,63 @@ def decode_access_token(token: str) -> int | None:
     """Belirteç geçerliyse kullanıcı kimliğini, değilse None döndürür."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return int(payload["sub"])
+    except (jwt.PyJWTError, KeyError, ValueError):
+        return None
+
+
+# --- Saklanan gizli değerlerin şifrelenmesi ---
+#
+# Gmail'in yenileme anahtarı (refresh token), posta kutusuna süresiz okuma
+# erişimi verir. Veritabanı sızarsa bu anahtarlar işe yaramasın diye düz metin
+# değil, Fernet (AES + HMAC) ile şifrelenmiş saklanır.
+
+
+def _fernet() -> Fernet:
+    key = os.getenv("TOKEN_ENCRYPTION_KEY", "").strip()
+    if not key:
+        # Ayrı anahtar verilmemişse SECRET_KEY'den 32 baytlık anahtar türet.
+        digest = hashlib.sha256(f"token-sifreleme:{SECRET_KEY}".encode()).digest()
+        key = base64.urlsafe_b64encode(digest).decode()
+    return Fernet(key)
+
+
+def encrypt_secret(value: str) -> str:
+    return _fernet().encrypt(value.encode("utf-8")).decode("ascii")
+
+
+def decrypt_secret(token: str) -> str | None:
+    """Şifreyi çözer; anahtar değişmiş ya da veri bozulmuşsa None döndürür."""
+    try:
+        return _fernet().decrypt(token.encode("ascii")).decode("utf-8")
+    except (InvalidToken, ValueError):
+        return None
+
+
+# --- OAuth "state" belirteci ---
+#
+# Google girişten dönerken tarayıcı bizim API'mize Authorization başlığı
+# taşımaz; hangi kullanıcının döndüğünü state parametresinden anlarız.
+# State imzalı ve 10 dakikalık olduğu için sahtesi üretilemez (CSRF koruması).
+
+_STATE_PURPOSE = "gmail-oauth"
+
+
+def create_state_token(user_id: int) -> str:
+    payload = {
+        "sub": str(user_id),
+        "purpose": _STATE_PURPOSE,
+        "nonce": secrets.token_urlsafe(8),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=10),
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def decode_state_token(token: str) -> int | None:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("purpose") != _STATE_PURPOSE:
+            return None  # erişim belirteci state yerine kullanılamasın
         return int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         return None
