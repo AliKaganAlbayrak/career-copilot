@@ -14,8 +14,8 @@ from . import models, schemas
 from .ai import ask_model
 from .auth import get_current_user
 from .database import get_db
-from .llm import LLMClient, get_llm_client
 from .gmail import GmailProvider, GoogleOAuth, get_google_oauth
+from .llm import LLMClient, get_llm_client
 from .mail import (
     MailAuthError,
     MailFetchError,

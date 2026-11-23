@@ -82,7 +82,11 @@ class GoogleOAuth:
             raise MailFetchError(f"Google'a ulaşılamadı: {exc}") from exc
         if response.status_code in (400, 401):
             # invalid_grant: kod kullanılmış, izin geri alınmış ya da süresi dolmuş.
-            raise MailAuthError(response.json().get("error", "invalid_grant"))
+            try:
+                reason = str(response.json().get("error", "invalid_grant"))
+            except ValueError:
+                reason = "invalid_grant"
+            raise MailAuthError(reason)
         if response.is_error:
             raise MailFetchError(f"Google beklenmedik yanıt verdi ({response.status_code}).")
         return response.json()
