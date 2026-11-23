@@ -172,3 +172,21 @@ class SyncResult(BaseModel):
     scanned: int  # sağlayıcıdan gelen
     job_related: int  # ön elemeyi ve modeli geçen
     new: int  # bu taramada ilk kez kaydedilen
+
+
+class MailConnectionStatus(BaseModel):
+    """GET /inbox/connection: posta bağlantısının durumu."""
+
+    connected: bool
+    provider: str | None = None
+    email_address: str | None = None
+    connected_at: datetime | None = None
+    last_synced_at: datetime | None = None
+    gmail_available: bool  # sunucuda Google ayarları var mı
+    demo_available: bool  # bağlantı yokken örnek e-postalarla taranabilir mi
+
+
+class AuthUrl(BaseModel):
+    """GET /inbox/gmail/connect: kullanıcının gideceği Google izin sayfası."""
+
+    auth_url: str
