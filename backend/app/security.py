@@ -48,7 +48,7 @@ def verify_password(password: str, stored: str) -> bool:
 def create_access_token(user_id: int) -> str:
     """Kullanıcı kimliğini taşıyan, süresi dolan imzalı bir JWT üretir."""
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {"sub": str(user_id), "exp": expires_at}
+    payload = {"sub": str(user_id), "purpose": "access", "exp": expires_at}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
@@ -56,6 +56,10 @@ def decode_access_token(token: str) -> int | None:
     """Belirteç geçerliyse kullanıcı kimliğini, değilse None döndürür."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Aynı anahtarla imzalanan başka belirteçler (ör. OAuth state) URL'de
+        # dolaşır; onlar oturum açmak için kullanılamasın.
+        if payload.get("purpose") != "access":
+            return None
         return int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
         return None
