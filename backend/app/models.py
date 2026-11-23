@@ -126,3 +126,24 @@ class EmailMessage(Base):
     def __repr__(self) -> str:
         return f"<EmailMessage {self.id} {self.sender!r} {self.category}>"
 
+
+class MailConnection(Base):
+    """Kullanıcının bağladığı posta hesabı (şimdilik yalnızca Gmail).
+
+    Yenileme anahtarı şifreli saklanır; her taramada bundan kısa ömürlü bir
+    erişim anahtarı alınır, o da hiç kaydedilmez.
+    """
+
+    __tablename__ = "mail_connections"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    provider: Mapped[str] = mapped_column(String(20))
+    email_address: Mapped[str] = mapped_column(String(320))
+    encrypted_refresh_token: Mapped[str] = mapped_column(Text)
+    connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<MailConnection {self.owner_id} {self.provider} {self.email_address}>"
+
