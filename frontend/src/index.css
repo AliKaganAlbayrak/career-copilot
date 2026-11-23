@@ -406,3 +406,28 @@ textarea {
   font-size: 0.85rem;
   color: #15803d;
 }
+
+.connection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.connection-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+button.ghost {
+  background: #fff;
+  border-color: #cbd2d9;
+  color: #1d4ed8;
+}

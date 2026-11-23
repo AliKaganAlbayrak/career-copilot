@@ -100,3 +100,14 @@ export interface SyncResult {
   job_related: number;
   new: number;
 }
+
+// GET /inbox/connection çıktısı.
+export interface MailConnection {
+  connected: boolean;
+  provider: string | null;
+  email_address: string | null;
+  connected_at: string | null;
+  last_synced_at: string | null;
+  gmail_available: boolean;
+  demo_available: boolean;
+}
