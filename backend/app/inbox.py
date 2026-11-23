@@ -12,13 +12,48 @@ from .ai import ask_model
 from .auth import get_current_user
 from .database import get_db
 from .llm import LLMClient, get_llm_client
-from .mail import MailNotConfiguredError, MailProvider, get_mail_provider
+from .gmail import GmailProvider, GoogleOAuth, get_google_oauth
+from .mail import (
+    MailAuthError,
+    MailFetchError,
+    MailNotConfiguredError,
+    MailProvider,
+    get_mail_provider,
+)
+from .security import decrypt_secret
 
 router = APIRouter(prefix="/inbox", tags=["posta kutusu"])
 
 
-def mail_provider_or_503() -> MailProvider:
-    """Sağlayıcı yapılandırılmamışsa anlaşılır bir 503 döndürür."""
+def get_connection(db: Session, user: models.User) -> models.MailConnection | None:
+    return db.scalar(
+        select(models.MailConnection).where(models.MailConnection.owner_id == user.id)
+    )
+
+
+def mail_provider_or_503(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+    oauth: GoogleOAuth | None = Depends(get_google_oauth),
+) -> MailProvider:
+    """Kullanıcının sağlayıcısını seçer: bağlı Gmail varsa o, yoksa demo.
+
+    İkisi de yoksa anlaşılır bir 503 döndürür.
+    """
+    connection = get_connection(db, current_user)
+    if connection is not None:
+        if oauth is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Gmail bağlı ama sunucuda Google ayarları eksik (GOOGLE_CLIENT_ID).",
+            )
+        refresh = decrypt_secret(connection.encrypted_refresh_token)
+        if refresh is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Gmail anahtarı çözülemedi (şifreleme anahtarı değişmiş olabilir). Yeniden bağla.",
+            )
+        return GmailProvider(oauth, refresh)
     try:
         return get_mail_provider()
     except MailNotConfiguredError as exc:
@@ -57,7 +92,15 @@ def sync(
         )
     )
 
-    messages = provider.fetch_recent(current_user, days)
+    try:
+        messages = provider.fetch_recent(current_user, days, frozenset(seen))
+    except MailAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Gmail izni geri alınmış ya da süresi dolmuş. Hesabı yeniden bağla.",
+        ) from exc
+    except MailFetchError as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     job_related = 0
     new = 0
     for message in messages:
@@ -111,6 +154,9 @@ def sync(
         job_related += 1
         new += 1
 
+    connection = get_connection(db, current_user)
+    if connection is not None:
+        connection.last_synced_at = models.utcnow()
     db.commit()
     return schemas.SyncResult(scanned=len(messages), job_related=job_related, new=new)
 
