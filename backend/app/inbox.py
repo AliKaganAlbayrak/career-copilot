@@ -10,7 +10,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from . import mail_classifier as mc
-from . import models, schemas
+from . import history, models, schemas
 from .ai import ask_model
 from .auth import get_current_user
 from .database import get_db
@@ -208,7 +208,7 @@ def accept_suggestion(
             detail="Bağlı başvuru artık yok; öneri uygulanamaz.",
         )
 
-    application.status = email.suggested_status
+    history.record(db, application, email.suggested_status, models.ChangeSource.EPOSTA)
     email.suggestion_state = models.SuggestionState.KABUL.value
     db.commit()
     db.refresh(email)

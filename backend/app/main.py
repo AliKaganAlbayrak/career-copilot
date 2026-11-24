@@ -7,10 +7,10 @@ from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from . import models, schemas, stats as stats_calc
+from . import history, models, schemas, stats as stats_calc
 from .ai import router as ai_router
 from .auth import get_current_user, router as auth_router
 from .inbox import router as inbox_router
@@ -75,11 +75,11 @@ def create_application(
     current_user: models.User = Depends(get_current_user),
 ) -> models.Application:
     """Oturum açmış kullanıcı adına yeni başvuru oluşturur."""
-    data = payload.model_dump(exclude_none=True)
-    data["status"] = payload.status.value
+    data = payload.model_dump(exclude_none=True, exclude={"status"})
     application = models.Application(**data, owner_id=current_user.id)
 
     db.add(application)
+    history.record(db, application, payload.status.value, models.ChangeSource.OLUSTURMA)
     db.commit()
     db.refresh(application)  # id ve applied_at veritabanından geri okunur
     return application
@@ -136,11 +136,12 @@ def update_application(
 
     # exclude_unset: istemcinin hiç göndermediği alanları atla.
     changes = payload.model_dump(exclude_unset=True)
-    if "status" in changes and changes["status"] is not None:
-        changes["status"] = changes["status"].value
+    new_status = changes.pop("status", None)
 
     for field, value in changes.items():
         setattr(application, field, value)
+    if new_status is not None:
+        history.record(db, application, new_status.value, models.ChangeSource.MANUEL)
 
     db.commit()
     db.refresh(application)
@@ -166,6 +167,10 @@ def delete_application(
         update(models.EmailMessage)
         .where(models.EmailMessage.application_id == application.id)
         .values(application_id=None)
+    )
+    # Geçmiş başvuruyla birlikte gider (ON DELETE CASCADE'in SQLite'taki karşılığı).
+    db.execute(
+        delete(models.StatusChange).where(models.StatusChange.application_id == application.id)
     )
     db.delete(application)
     db.commit()
