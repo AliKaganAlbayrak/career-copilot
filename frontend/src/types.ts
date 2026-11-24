@@ -111,3 +111,21 @@ export interface MailConnection {
   gmail_available: boolean;
   demo_available: boolean;
 }
+
+// GET /applications/{id}/history kaydı.
+export interface StatusChange {
+  from_status: ApplicationStatus | null;
+  to_status: ApplicationStatus;
+  source: "olusturma" | "manuel" | "eposta";
+  changed_at: string;
+}
+
+// GET /applications/stale kaydı.
+export interface StaleApplication {
+  id: number;
+  company: string;
+  position: string;
+  status: ApplicationStatus;
+  last_change_at: string;
+  days_quiet: number;
+}

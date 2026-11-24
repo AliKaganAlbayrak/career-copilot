@@ -6,7 +6,9 @@ import type {
   CoverLetterRequest,
   Email,
   MailConnection,
+  StaleApplication,
   Stats,
+  StatusChange,
   SyncResult,
   User,
   WeekCount,
@@ -222,4 +224,14 @@ export async function connectGmail(): Promise<void> {
 
 export function disconnectMail(deleteEmails: boolean): Promise<void> {
   return request<void>(`/inbox/connection?delete_emails=${deleteEmails}`, { method: "DELETE" });
+}
+
+// --- Durum geçmişi ---
+
+export function getHistory(id: number): Promise<StatusChange[]> {
+  return request<StatusChange[]>(`/applications/${id}/history`);
+}
+
+export function getStale(days = 14): Promise<StaleApplication[]> {
+  return request<StaleApplication[]>(`/applications/stale?days=${days}`);
 }
