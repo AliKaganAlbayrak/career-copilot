@@ -147,3 +147,35 @@ class MailConnection(Base):
     def __repr__(self) -> str:
         return f"<MailConnection {self.owner_id} {self.provider} {self.email_address}>"
 
+
+class ChangeSource(str, Enum):
+    """Durum değişikliğinin nereden geldiği."""
+
+    OLUSTURMA = "olusturma"  # başvuru ilk kaydedildiğinde
+    MANUEL = "manuel"  # kullanıcı tablodan değiştirdi
+    EPOSTA = "eposta"  # bir e-posta önerisi kabul edildi
+
+
+class StatusChange(Base):
+    """Bir başvurunun durum geçmişindeki tek adım.
+
+    Başvuru tablosu yalnızca *şu anki* durumu tutar. Geçmiş olmadan
+    "mülakata kalıp sonra reddedildim" bilgisi kaybolur; huni yanlış sayar
+    ve "ne zamandır ses yok" sorusu cevaplanamaz.
+    """
+
+    __tablename__ = "status_changes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        index=True,
+    )
+    from_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    to_status: Mapped[str] = mapped_column(String(20))
+    source: Mapped[str] = mapped_column(String(20))
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<StatusChange {self.application_id}: {self.from_status} -> {self.to_status}>"
+
