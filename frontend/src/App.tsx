@@ -5,6 +5,7 @@ import ApplicationForm from "./components/ApplicationForm";
 import ApplicationTable from "./components/ApplicationTable";
 import AuthForm from "./components/AuthForm";
 import InboxPanel from "./components/InboxPanel";
+import StaleReminder from "./components/StaleReminder";
 import StatsPanel from "./components/StatsPanel";
 import type { Application, ApplicationCreate, ApplicationStatus } from "./types";
 
@@ -117,6 +118,8 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <StaleReminder refreshKey={applications} onUnauthorized={handleUnauthorized} />
 
       <StatsPanel refreshKey={applications} onUnauthorized={handleUnauthorized} />
 

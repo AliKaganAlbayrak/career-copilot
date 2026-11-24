@@ -468,3 +468,31 @@ button.ghost {
 .timeline-source {
   color: #7b8794;
 }
+
+.reminder {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+}
+
+.reminder h2 {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+
+.reminder p {
+  margin: 0 0 8px;
+  color: #52606d;
+  font-size: 0.9rem;
+}
+
+.reminder ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.reminder li span {
+  color: #92400e;
+}
