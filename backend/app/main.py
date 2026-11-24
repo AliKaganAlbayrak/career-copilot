@@ -270,10 +270,19 @@ def stats(
     for status_value, count in rows:
         by_status[status_value] = count
 
+    # Her başvurunun geçmişte bulunduğu durumlar (şu anki dahil).
+    reached: dict[int, set[str]] = {}
+    for app_id, held_status in db.execute(
+        select(models.StatusChange.application_id, models.StatusChange.to_status)
+        .join(models.Application, models.Application.id == models.StatusChange.application_id)
+        .where(models.Application.owner_id == current_user.id)
+    ):
+        reached.setdefault(app_id, set()).add(held_status)
+
     return schemas.Stats(
         total=sum(by_status.values()),
         by_status=by_status,
-        funnel=stats_calc.funnel(by_status),
+        funnel=stats_calc.funnel(list(reached.values())),
     )
 
 
