@@ -190,3 +190,25 @@ class AuthUrl(BaseModel):
     """GET /inbox/gmail/connect: kullanıcının gideceği Google izin sayfası."""
 
     auth_url: str
+
+
+class StatusChange(BaseModel):
+    """GET /applications/{id}/history kaydı."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    from_status: str | None
+    to_status: str
+    source: str
+    changed_at: datetime
+
+
+class StaleApplication(BaseModel):
+    """GET /applications/stale: uzun süredir hareketsiz başvuru."""
+
+    id: int
+    company: str
+    position: str
+    status: str
+    last_change_at: datetime
+    days_quiet: int

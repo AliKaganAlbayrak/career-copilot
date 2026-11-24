@@ -107,6 +107,82 @@ def list_applications(
 
 
 @app.get(
+    "/applications/stale",
+    response_model=list[schemas.StaleApplication],
+    tags=["başvurular"],
+)
+def stale_applications(
+    days: int = Query(default=14, ge=1, le=180),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> list[schemas.StaleApplication]:
+    """Sonucu beklenen ama `days` gündür durumu değişmemiş başvurular.
+
+    "Haber var mı?" hatırlatması için. Bu rota /applications/{application_id}'den
+    önce tanımlı olmalı; yoksa FastAPI "stale" sözcüğünü id sanıp 422 döndürür.
+    """
+    last_change = (
+        select(
+            models.StatusChange.application_id,
+            func.max(models.StatusChange.changed_at).label("last_change_at"),
+        )
+        .group_by(models.StatusChange.application_id)
+        .subquery()
+    )
+    rows = db.execute(
+        select(models.Application, last_change.c.last_change_at)
+        .join(last_change, last_change.c.application_id == models.Application.id)
+        .where(
+            models.Application.owner_id == current_user.id,
+            # Sonuçlanmış başvurular için beklenecek haber yok.
+            models.Application.status.in_(
+                [models.ApplicationStatus.BASVURULDU.value, models.ApplicationStatus.MULAKAT.value]
+            ),
+        )
+    ).all()
+
+    now = datetime.now(timezone.utc)
+    result = []
+    for application, last_change_at in rows:
+        if last_change_at.tzinfo is None:  # SQLite saat dilimi saklamaz; UTC'dir
+            last_change_at = last_change_at.replace(tzinfo=timezone.utc)
+        quiet = (now - last_change_at).days
+        if quiet >= days:
+            result.append(
+                schemas.StaleApplication(
+                    id=application.id,
+                    company=application.company,
+                    position=application.position,
+                    status=application.status,
+                    last_change_at=last_change_at,
+                    days_quiet=quiet,
+                )
+            )
+    return sorted(result, key=lambda r: r.days_quiet, reverse=True)
+
+
+@app.get(
+    "/applications/{application_id}/history",
+    response_model=list[schemas.StatusChange],
+    tags=["başvurular"],
+)
+def application_history(
+    application_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+) -> list[models.StatusChange]:
+    """Başvurunun durum geçmişi, eskiden yeniye."""
+    application = get_application_or_404(application_id, db, current_user)
+    return list(
+        db.scalars(
+            select(models.StatusChange)
+            .where(models.StatusChange.application_id == application.id)
+            .order_by(models.StatusChange.changed_at, models.StatusChange.id)
+        )
+    )
+
+
+@app.get(
     "/applications/{application_id}",
     response_model=schemas.Application,
     tags=["başvurular"],
