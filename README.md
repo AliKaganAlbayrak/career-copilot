@@ -61,6 +61,8 @@ python -m pytest -q
 | `GET` | `/applications/{id}` | Tek kayıt (yoksa 404) |
 | `PUT` | `/applications/{id}` | Kısmi günceller |
 | `DELETE` | `/applications/{id}` | Siler (204) |
+| `GET` | `/applications/{id}/history` | Durum geçmişi (ne zaman, neden değişti) |
+| `GET` | `/applications/stale?days=14` | N gündür durumu değişmemiş, sonuç bekleyen başvurular |
 | `GET` | `/stats` | Toplam sayı, durum kırılımı ve süreç hunisi |
 | `GET` | `/stats/timeline?weeks=12` | Son N haftanın haftalık başvuru sayıları |
 | `POST` | `/inbox/sync?days=14` | Postaları tarar, işle ilgili olanları sınıflandırıp kaydeder |
@@ -77,6 +79,21 @@ python -m pytest -q
 her kullanıcı yalnızca kendi başvurularını görür. Parolalar scrypt ile tuzlanıp özetlenir.
 
 Durum değerleri: `basvuruldu`, `mulakat`, `teklif`, `red`, `kabul`
+
+## Durum geçmişi
+
+Başvuru tablosu yalnızca şu anki durumu tutar; her değişiklik ayrıca `status_changes`
+tablosuna yazılır (ne zaman, hangi durumdan hangisine, kaynağı: oluşturma / elle / e-posta).
+Durumu değiştiren her kod yolu tek bir işlevden (`app/history.py`) geçer, böylece hiçbir
+yolda kayıt atlanmaz. Bunun üç sonucu var:
+
+- **Doğru huni:** mülakata kalıp sonra reddedilen başvuru hem "Mülakat" hem "Geri dönüş"
+  aşamasında sayılır.
+- **Zaman çizelgesi:** tablodaki "Geçmiş" düğmesi başvurunun tüm adımlarını gösterir.
+- **"Haber var mı?" hatırlatması:** 14 gündür durumu değişmemiş başvurular listelenir.
+
+`0004` göçü, geçmiş tablosu yokken kaydedilmiş başvurulara birer başlangıç kaydı ekleyen bir
+**veri göçü** içerir; bu da `test_migrations.py`'de test edilir.
 
 ## Veritabanı göçleri
 
@@ -155,7 +172,7 @@ kullanıcısı bağlanabilir; herkese açık yayın Google'ın güvenlik denetim
 - [x] Grafikler — süreç hunisi ve haftalık başvuru grafiği (kütüphanesiz SVG)
 - [x] Posta kutusu — iş e-postalarını sınıflandırma ve durum önerisi (demo sağlayıcı)
 - [x] Gmail bağlantısı — OAuth, şifreli anahtar saklama, yalnızca okuma izni
-- [ ] Durum geçmişi — huninin mülakat sonrası redleri de doğru sayması için
+- [x] Durum geçmişi — doğru huni, zaman çizelgesi, "haber var mı?" hatırlatması
 - [ ] Docker, canlıya alma, paylaşılabilir demo
 
 ## Katkı düzeni
