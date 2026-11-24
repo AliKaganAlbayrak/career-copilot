@@ -31,9 +31,26 @@ class MailNotConfiguredError(Exception):
     """Bu kullanıcı ya da sunucu için posta bağlantısı yok."""
 
 
+class MailAuthError(Exception):
+    """Bağlantı geçersiz: izin geri alınmış ya da anahtarın süresi dolmuş."""
+
+
+class MailFetchError(Exception):
+    """Sağlayıcıya ulaşılamadı ya da beklenmedik yanıt verdi."""
+
+
 class MailProvider(Protocol):
-    def fetch_recent(self, user: models.User, days: int) -> list[MailMessage]:
-        """Son `days` gündeki e-postaları döndürür."""
+    def fetch_recent(
+        self,
+        user: models.User,
+        days: int,
+        known_ids: frozenset[str] = frozenset(),
+    ) -> list[MailMessage]:
+        """Son `days` gündeki e-postaları döndürür.
+
+        known_ids: daha önce kaydedilmiş iletiler; sağlayıcı bunları yeniden
+        indirmeyebilir (hem hız hem gizlilik için).
+        """
         ...
 
 
@@ -44,7 +61,12 @@ class DemoMailProvider:
     ki ayıklama adımı gerçekten bir şey ayıklasın.
     """
 
-    def fetch_recent(self, user: models.User, days: int) -> list[MailMessage]:
+    def fetch_recent(
+        self,
+        user: models.User,
+        days: int,
+        known_ids: frozenset[str] = frozenset(),
+    ) -> list[MailMessage]:
         now = datetime.now(timezone.utc)
         samples = [
             (
@@ -87,7 +109,7 @@ class DemoMailProvider:
 
 
 def get_mail_provider() -> MailProvider:
-    """FastAPI bağımlılığı. MAIL_PROVIDER: demo | gmail (yakında)."""
+    """Gmail bağlı olmayan kullanıcılar için yedek sağlayıcı. MAIL_PROVIDER=demo."""
     kind = os.getenv("MAIL_PROVIDER", "").lower()
     if kind == "demo":
         return DemoMailProvider()

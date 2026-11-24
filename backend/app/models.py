@@ -126,3 +126,56 @@ class EmailMessage(Base):
     def __repr__(self) -> str:
         return f"<EmailMessage {self.id} {self.sender!r} {self.category}>"
 
+
+class MailConnection(Base):
+    """Kullanıcının bağladığı posta hesabı (şimdilik yalnızca Gmail).
+
+    Yenileme anahtarı şifreli saklanır; her taramada bundan kısa ömürlü bir
+    erişim anahtarı alınır, o da hiç kaydedilmez.
+    """
+
+    __tablename__ = "mail_connections"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, index=True)
+    provider: Mapped[str] = mapped_column(String(20))
+    email_address: Mapped[str] = mapped_column(String(320))
+    encrypted_refresh_token: Mapped[str] = mapped_column(Text)
+    connected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<MailConnection {self.owner_id} {self.provider} {self.email_address}>"
+
+
+class ChangeSource(str, Enum):
+    """Durum değişikliğinin nereden geldiği."""
+
+    OLUSTURMA = "olusturma"  # başvuru ilk kaydedildiğinde
+    MANUEL = "manuel"  # kullanıcı tablodan değiştirdi
+    EPOSTA = "eposta"  # bir e-posta önerisi kabul edildi
+
+
+class StatusChange(Base):
+    """Bir başvurunun durum geçmişindeki tek adım.
+
+    Başvuru tablosu yalnızca *şu anki* durumu tutar. Geçmiş olmadan
+    "mülakata kalıp sonra reddedildim" bilgisi kaybolur; huni yanlış sayar
+    ve "ne zamandır ses yok" sorusu cevaplanamaz.
+    """
+
+    __tablename__ = "status_changes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    application_id: Mapped[int] = mapped_column(
+        ForeignKey("applications.id", ondelete="CASCADE"),
+        index=True,
+    )
+    from_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    to_status: Mapped[str] = mapped_column(String(20))
+    source: Mapped[str] = mapped_column(String(20))
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+    def __repr__(self) -> str:
+        return f"<StatusChange {self.application_id}: {self.from_status} -> {self.to_status}>"
+

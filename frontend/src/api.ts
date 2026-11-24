@@ -5,7 +5,10 @@ import type {
   ApplicationStatus,
   CoverLetterRequest,
   Email,
+  MailConnection,
+  StaleApplication,
   Stats,
+  StatusChange,
   SyncResult,
   User,
   WeekCount,
@@ -206,4 +209,29 @@ export function acceptSuggestion(id: number): Promise<Email> {
 
 export function dismissSuggestion(id: number): Promise<Email> {
   return request<Email>(`/inbox/${id}/dismiss`, { method: "POST" });
+}
+
+export function getMailConnection(): Promise<MailConnection> {
+  return request<MailConnection>("/inbox/connection");
+}
+
+// Google'ın izin sayfasına gider; Google işi bitince bizim callback'e döner,
+// backend de kullanıcıyı ?gmail=baglandi ile uygulamaya geri gönderir.
+export async function connectGmail(): Promise<void> {
+  const data = await request<{ auth_url: string }>("/inbox/gmail/connect");
+  window.location.href = data.auth_url;
+}
+
+export function disconnectMail(deleteEmails: boolean): Promise<void> {
+  return request<void>(`/inbox/connection?delete_emails=${deleteEmails}`, { method: "DELETE" });
+}
+
+// --- Durum geçmişi ---
+
+export function getHistory(id: number): Promise<StatusChange[]> {
+  return request<StatusChange[]>(`/applications/${id}/history`);
+}
+
+export function getStale(days = 14): Promise<StaleApplication[]> {
+  return request<StaleApplication[]>(`/applications/stale?days=${days}`);
 }

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 
-from app.stats import funnel, week_start, weekly_counts
+from app.stats import funnel, funnel_from_status, week_start, weekly_counts
 
 
 def bos_durumlar(**degerler: int) -> dict[str, int]:
@@ -14,7 +14,7 @@ def bos_durumlar(**degerler: int) -> dict[str, int]:
 
 
 def test_huni_asamalari_kumulatif_sayar():
-    adimlar = {a.key: a for a in funnel(bos_durumlar(basvuruldu=5, red=2, mulakat=2, teklif=1))}
+    adimlar = {a.key: a for a in funnel_from_status(bos_durumlar(basvuruldu=5, red=2, mulakat=2, teklif=1))}
 
     assert adimlar["basvuru"].count == 10
     assert adimlar["donus"].count == 5  # red + mulakat + teklif
@@ -25,7 +25,7 @@ def test_huni_asamalari_kumulatif_sayar():
 
 
 def test_bos_huni_sifira_bolmez():
-    adimlar = funnel(bos_durumlar())
+    adimlar = funnel_from_status(bos_durumlar())
 
     assert all(a.count == 0 and a.rate == 0.0 for a in adimlar)
 

@@ -100,3 +100,32 @@ export interface SyncResult {
   job_related: number;
   new: number;
 }
+
+// GET /inbox/connection çıktısı.
+export interface MailConnection {
+  connected: boolean;
+  provider: string | null;
+  email_address: string | null;
+  connected_at: string | null;
+  last_synced_at: string | null;
+  gmail_available: boolean;
+  demo_available: boolean;
+}
+
+// GET /applications/{id}/history kaydı.
+export interface StatusChange {
+  from_status: ApplicationStatus | null;
+  to_status: ApplicationStatus;
+  source: "olusturma" | "manuel" | "eposta";
+  changed_at: string;
+}
+
+// GET /applications/stale kaydı.
+export interface StaleApplication {
+  id: number;
+  company: string;
+  position: string;
+  status: ApplicationStatus;
+  last_change_at: string;
+  days_quiet: number;
+}

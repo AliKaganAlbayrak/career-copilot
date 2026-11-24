@@ -13,9 +13,8 @@ from .models import ApplicationStatus as S
 from .schemas import FunnelStep, WeekCount
 
 # Huni aşamaları: her aşama, en az o noktaya ulaşmış başvuruları sayar.
-# Sınır: kayıtta yalnızca *şu anki* durum tutuluyor. Mülakattan sonra reddedilen
-# bir başvuru "red" olduğu için mülakat aşamasında görünmez. Tam doğruluk için
-# durum geçmişi tablosu gerekir (yol haritasında).
+# "Ulaşmış" durum geçmişine göre belirlenir: mülakata kalıp sonra reddedilen bir
+# başvuru hem "Mülakat" hem "Geri dönüş" aşamasında sayılır.
 FUNNEL: list[tuple[str, str, set[str]]] = [
     ("basvuru", "Başvuru", {s.value for s in S}),
     ("donus", "Geri dönüş", {S.MULAKAT.value, S.TEKLIF.value, S.KABUL.value, S.RED.value}),
@@ -25,15 +24,23 @@ FUNNEL: list[tuple[str, str, set[str]]] = [
 ]
 
 
-def funnel(by_status: dict[str, int]) -> list[FunnelStep]:
-    """Durum kırılımından huni aşamalarını ve ilk aşamaya göre oranları üretir."""
-    total = sum(by_status.values())
+def funnel(reached: list[set[str]]) -> list[FunnelStep]:
+    """Huni aşamaları ve ilk aşamaya göre oranlar.
+
+    reached: her başvuru için, geçmişinde bulunduğu tüm durumların kümesi.
+    """
+    total = len(reached)
     steps = []
     for key, label, statuses in FUNNEL:
-        count = sum(by_status.get(s, 0) for s in statuses)
+        count = sum(1 for held in reached if held & statuses)
         rate = round(count / total * 100, 1) if total else 0.0
         steps.append(FunnelStep(key=key, label=label, count=count, rate=rate))
     return steps
+
+
+def funnel_from_status(by_status: dict[str, int]) -> list[FunnelStep]:
+    """Geçmiş yokken (yalnızca şu anki durumlarla) huni: her başvuru tek durumda."""
+    return funnel([{status} for status, count in by_status.items() for _ in range(count)])
 
 
 def week_start(day: date) -> date:

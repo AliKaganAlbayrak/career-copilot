@@ -61,11 +61,16 @@ python -m pytest -q
 | `GET` | `/applications/{id}` | Tek kayıt (yoksa 404) |
 | `PUT` | `/applications/{id}` | Kısmi günceller |
 | `DELETE` | `/applications/{id}` | Siler (204) |
+| `GET` | `/applications/{id}/history` | Durum geçmişi (ne zaman, neden değişti) |
+| `GET` | `/applications/stale?days=14` | N gündür durumu değişmemiş, sonuç bekleyen başvurular |
 | `GET` | `/stats` | Toplam sayı, durum kırılımı ve süreç hunisi |
 | `GET` | `/stats/timeline?weeks=12` | Son N haftanın haftalık başvuru sayıları |
 | `POST` | `/inbox/sync?days=14` | Postaları tarar, işle ilgili olanları sınıflandırıp kaydeder |
 | `GET` | `/inbox` | İş e-postaları ve durum önerileri |
 | `POST` | `/inbox/{id}/accept` · `/dismiss` | Öneriyi uygular / yok sayar |
+| `GET` | `/inbox/connection` | Posta bağlantısının durumu |
+| `GET` | `/inbox/gmail/connect` | Google izin sayfasının adresi |
+| `DELETE` | `/inbox/connection?delete_emails=` | Bağlantıyı kaldırır, izni Google'da da geri alır |
 | `GET` / `PUT` | `/ai/cv` | Özgeçmiş metnini okur / kaydeder |
 | `POST` | `/ai/analyze` | İlan + özgeçmiş eşleşme analizi (puan, güçlü yönler, eksikler) |
 | `POST` | `/ai/cover-letter` | Kişiye özel ön yazı üretir |
@@ -74,6 +79,21 @@ python -m pytest -q
 her kullanıcı yalnızca kendi başvurularını görür. Parolalar scrypt ile tuzlanıp özetlenir.
 
 Durum değerleri: `basvuruldu`, `mulakat`, `teklif`, `red`, `kabul`
+
+## Durum geçmişi
+
+Başvuru tablosu yalnızca şu anki durumu tutar; her değişiklik ayrıca `status_changes`
+tablosuna yazılır (ne zaman, hangi durumdan hangisine, kaynağı: oluşturma / elle / e-posta).
+Durumu değiştiren her kod yolu tek bir işlevden (`app/history.py`) geçer, böylece hiçbir
+yolda kayıt atlanmaz. Bunun üç sonucu var:
+
+- **Doğru huni:** mülakata kalıp sonra reddedilen başvuru hem "Mülakat" hem "Geri dönüş"
+  aşamasında sayılır.
+- **Zaman çizelgesi:** tablodaki "Geçmiş" düğmesi başvurunun tüm adımlarını gösterir.
+- **"Haber var mı?" hatırlatması:** 14 gündür durumu değişmemiş başvurular listelenir.
+
+`0004` göçü, geçmiş tablosu yokken kaydedilmiş başvurulara birer başlangıç kaydı ekleyen bir
+**veri göçü** içerir; bu da `test_migrations.py`'de test edilir.
 
 ## Veritabanı göçleri
 
@@ -117,8 +137,31 @@ kullanıcı onaylar.
 3. **Eşleştirme:** şirket adı ve gönderen alan adıyla (`ik@aselsan.com.tr` → Aselsan).
 
 Gizlilik: e-postanın gövdesi saklanmaz, yalnızca gönderen, konu, tarih ve özet tutulur;
-işle ilgisiz e-postalar hiç kaydedilmez. Sağlayıcı `MailProvider` arayüzünün arkasında;
-şu an `MAIL_PROVIDER=demo` örnek e-postalarla çalışır, Gmail sağlayıcısı (OAuth) sıradaki adım.
+işle ilgisiz e-postalar hiç kaydedilmez. Sağlayıcı `MailProvider` arayüzünün arkasında:
+Gmail bağlıysa Gmail, değilse `MAIL_PROVIDER=demo` ile örnek e-postalar.
+
+### Gmail bağlantısı
+
+- Yalnızca **okuma** izni (`gmail.readonly`) istenir; uygulama e-posta gönderemez ya da silemez.
+- Google'ın verdiği yenileme anahtarı veritabanında **şifreli** (Fernet) saklanır; erişim
+  anahtarı her taramada yeniden alınır ve hiç kaydedilmez.
+- OAuth `state` parametresi imzalı ve 10 dakikalık bir belirteçtir: Google'dan dönüşte
+  kullanıcı bundan tanınır, sahte dönüşler reddedilir.
+- Daha önce kaydedilen iletiler yeniden indirilmez. Bağlantı kaldırılınca izin Google'da da
+  geri alınır, istenirse kaydedilmiş özetler silinir.
+- Google'ın resmi kütüphanesi yerine REST uç noktaları `httpx` ile çağrılır; testler Google'ı
+  `httpx.MockTransport` ile taklit eder.
+
+Kurulum (bir kez):
+
+1. [Google Cloud Console](https://console.cloud.google.com)'da proje oluştur, **Gmail API**'yi etkinleştir.
+2. **OAuth consent screen**: "External", yayın durumu "Testing"; kendi Gmail adresini test kullanıcısı ekle.
+3. **Credentials → OAuth client ID**: tür "Web application", yönlendirme adresi
+   `http://localhost:8000/inbox/gmail/callback`.
+4. Client ID ve secret'ı `backend/.env` dosyasına yaz (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`).
+
+Not: `gmail.readonly` Google'ın kısıtlı izinlerindendir. Test modunda en fazla 100 test
+kullanıcısı bağlanabilir; herkese açık yayın Google'ın güvenlik denetimini gerektirir.
 
 ## Yol haritası
 
@@ -128,8 +171,8 @@ işle ilgisiz e-postalar hiç kaydedilmez. Sağlayıcı `MailProvider` arayüzü
 - [x] Yapay zekâ — ilan ve CV analizi, ön yazı üretimi (yerel LLM)
 - [x] Grafikler — süreç hunisi ve haftalık başvuru grafiği (kütüphanesiz SVG)
 - [x] Posta kutusu — iş e-postalarını sınıflandırma ve durum önerisi (demo sağlayıcı)
-- [ ] Gmail bağlantısı — OAuth ile gerçek posta kutusu
-- [ ] Durum geçmişi — huninin mülakat sonrası redleri de doğru sayması için
+- [x] Gmail bağlantısı — OAuth, şifreli anahtar saklama, yalnızca okuma izni
+- [x] Durum geçmişi — doğru huni, zaman çizelgesi, "haber var mı?" hatırlatması
 - [ ] Docker, canlıya alma, paylaşılabilir demo
 
 ## Katkı düzeni
